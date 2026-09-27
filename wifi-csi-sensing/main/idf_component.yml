@@ -1,0 +1,9 @@
+dependencies:
+  # esp_lcd_st7735 不走组件管理器：waveshare/esp_lcd_st7735 1.0.1 用的是 IDF v5
+  # 时代的 `rgb_endian` 字段，IDF v6.0 已改名 `data_endian`（旧名编不过）。
+  # 适配补丁版 vendor 在 ../components/esp_lcd_st7735/（仅此一处改动，
+  # 来源 waveshare 1.0.1，commit c3fb261）。勿删它重新拉取。
+  lvgl/lvgl:
+    version: "^9.5.0"
+  espressif/cjson:
+    version: ">=1.7.0"

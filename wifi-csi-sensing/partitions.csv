@@ -1,0 +1,9 @@
+# Name,   Type, SubType,  Offset,   Size,     Flags
+# OTA 双槽（web 刷机基线能力）：960K×2，app 槽 64K 对齐（构建强制）
+# nvs 收缩 24K→16K 腾出 otadata 位（重刷分区表后 NVS 前 16K 数据不动，
+# 校准/凭据保留；NVS 16K=4 页，已写入的 1-2 页全在前 16K）
+nvs,       data, nvs,      0x9000,   0x4000,
+phy_init,  data, phy,      0xd000,   0x1000,
+otadata,   data, ota,      0xe000,   0x2000,
+ota_0,     app,  ota_0,    0x10000,  0xF0000,
+ota_1,     app,  ota_1,    0x100000, 0xF0000,

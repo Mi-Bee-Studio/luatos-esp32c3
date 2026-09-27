@@ -1,0 +1,54 @@
+# ESP32 Blackbox 配置菜单
+# 通过 menuconfig 可配置 WiFi 配网热点和连接重试参数
+
+menu "ESP32 Blackbox Configuration"
+
+    config ESP_AP_SSID
+        string "Config Portal AP SSID"
+        default "ESP32_Blackbox"
+        help
+            WiFi 配置门户的接入点名称（SSID）。
+            设备启动配网模式时创建的热点的名称。
+
+    config ESP_AP_PASSWORD
+        string "Config Portal AP Password"
+        default "12345678"
+        help
+            WiFi 配置门户的接入点密码。
+            留空可创建开放网络（无密码）。
+
+    config ESP_MAXIMUM_RETRY
+        int "Maximum STA connection retry"
+        default 5
+        help
+            WiFi 客户端（STA）模式连接失败后的最大重试次数。
+            超过最大重试次数后将回退到 AP 配网模式。
+
+    config ESP_BOARD_TEST
+        bool "Run board self-test on startup"
+        default y if IDF_TARGET_ESP32C6
+        default n if IDF_TARGET_ESP32C3
+        help
+            启动时运行硬件自检，验证 NVS、WiFi、DNS、HTTP、TCP 等子系统。
+            ESP32-C6 (Seeed XIAO) 默认启用，用于新板卡验证。
+            ESP32-C3 默认关闭，避免影响正常启动速度。
+
+
+    config ESP_STATUS_LED
+        bool "Enable status LED indicator"
+        default y
+        help
+            启用板载 LED 状态指示功能。
+            通过不同的闪烁模式（C3）或颜色+闪烁（C6）显示设备当前状态。
+            禁用后 LED 模块编译为空操作，零开销。
+
+    config ESP_LED_GPIO
+        int "Status LED GPIO number"
+        default 8 if IDF_TARGET_ESP32C3
+        default 15 if IDF_TARGET_ESP32C6
+        depends on ESP_STATUS_LED
+        help
+            状态 LED 的 GPIO 引脚号。
+            ESP32-C3 SuperMini: GPIO8（板载单色 LED，低电平点亮）。
+            ESP32-XIAO ESP32C6: GPIO15（板载 WS2812 RGB LED）。
+endmenu
