@@ -24,6 +24,24 @@ Key points of the convention:
 - Projects share no code; when commonality is needed, copy first, and only consider
   extracting a shared component once things stabilize.
 
+### Firmware baseline norms (mandatory fleet-wide)
+
+Two baselines are mandatory for every MiBee firmware repo, and **every project** inside a
+board repo must satisfy them:
+
+1. **Watchdog: mandatory.** No naked main loops — tasks either subscribe to the ESP-IDF
+   task watchdog (TWDT) and feed it periodically, or (on RP2040) enable the hardware
+   watchdog.
+2. **Web/API firmware upgrade (OTA): mandatory where the hardware allows.** This board
+   has WiFi and its flash layout already reserves dual OTA slots (960 KB × 2), so every
+   project ships a web upgrade path; wired flashing (serialtap/esptool) is the recovery
+   path, not a substitute.
+
+| Project | Watchdog | Web/API OTA |
+|---------|----------|-------------|
+| wifi-csi-sensing | ✅ per-task TWDT (`esp_task_wdt_add`/`reset`) | ✅ dual OTA slots + onboard web flashing |
+| blackbox | ✅ per-task TWDT | ✅ dual OTA slots + onboard web flashing |
+
 ---
 
 ## Board Overview
@@ -40,35 +58,40 @@ Key points of the convention:
 | Dimensions/Breakout | 21 × 51 mm; castellated stamp holes along both edges, 2×16 = 32 pins |
 | Partition table | Custom dual OTA slots 960K × 2 (web flashing baseline; both sub-projects) |
 
-## Pinout Diagram (antenna up, USB-C down, front/component-side view; pin numbers match the official Luatos pinout)
+## Pinout Diagram (USB-C pointing up, front/component-side view; official LuatOS antenna-up pin numbers in parentheses)
+
+> The fleet-wide standard orientation is **USB-C pointing up** (see `esp32-s3-zero` for the
+> reference diagram). The official LuatOS pinout is antenna-up; this figure is that view
+> rotated 180°, with the official pin numbers annotated per pad for direct cross-checking.
 
 ```
-                  ~ 2.4G antenna ~
-       GND ◎│                 │◎ GND
-       IO0 ◎│   CORE-ESP32    │◎ 3V3
-       IO1 ◎│    ESP32-C3     │◎ IO2    ← LCD SCLK
-      IO12 ◎│    21 x 51 mm   │◎ IO3    ← LCD MOSI
-      IO18 ◎│                 │◎ IO10   ← LCD RST
-      IO19 ◎│                 │◎ IO6    ← LCD DC
-       GND ◎│ [RST]   [BOOT]  │◎ IO7    ← LCD CS
-      U0RX ◎│                 │◎ IO11   (VDD_SPI - burn the eFuse
-      U0TX ◎│                 │◎ GND     to use as GPIO)
-      IO13 ◎│                 │◎ 3V3
-        NC ◎│                 │◎ IO5    ← key LEFT
-       RST ◎│                 │◎ IO4    ← key CENTER
-       3V3 ◎│     ┌─────┐     │◎ IO8    ← key UP
-       GND ◎│     │USB-C│     │◎ IO9    ← key RIGHT = BOOT(IO9)
-       PWB ◎│     └─────┘     │◎ 5V
-        5V ◎│                 │◎ GND
-            └─────────────────┘
-        left row (01–16)  right row (17–32)
+                 ┌─ USB-C ─┐
+  GND(32) ◎     │          │     ◎ 5V(16)
+   5V(31) ◎     │          │     ◎ PWB(15)
+  IO9(30) ◎     │  CORE-   │     ◎ GND(14)   ← IO9 = key RIGHT = BOOT(IO9)
+  IO8(29) ◎     │  ESP32   │     ◎ 3V3(13)   ← IO8 = key UP
+  IO4(28) ◎     │    C3    │     ◎ RST(12)   ← IO4 = key CENTER
+  IO5(27) ◎     │  21×51mm │     ◎ NC(11)    ← IO5 = key LEFT
+  3V3(26) ◎     │          │     ◎ IO13(10)  ← IO13 = key DOWN + LED D5
+  GND(25) ◎     │          │     ◎ U0TX(09)  ← U0TX = IO21
+ IO11(24) ◎     │          │     ◎ U0RX(08)  ← U0RX = IO20; IO11 = VDD_SPI (burn eFuse to use as GPIO)
+   IO7(23) ◎    │  [BOOT]  │     ◎ GND(07)   ← IO7 = LCD CS
+   IO6(22) ◎    │   [RST]  │     ◎ IO19(06)  ← IO6 = LCD DC; IO19 = USB D−
+  IO10(21) ◎    │          │     ◎ IO18(05)  ← IO10 = LCD RST; IO18 = USB D+
+   IO3(20) ◎    │          │     ◎ IO12(04)  ← IO3 = LCD MOSI; IO12 = LED D4
+   IO2(19) ◎    │          │     ◎ IO1(03)   ← IO2 = LCD SCLK
+  3V3(18) ◎     │          │     ◎ IO0(02)   ← free (ADC0/ADC1, UART1 alt)
+  GND(17) ◎     │          │     ◎ GND(01)
+                └──────────┘
+                ~ 2.4G antenna ~
+      left row (official 32→17)  right row (official 16→01)
 ```
 
 Key points:
 
-- **Left row** (downward from the antenna end, 01–16): `GND, IO0, IO1, IO12, IO18, IO19, GND, U0RX, U0TX, IO13, NC, RST, 3V3, GND, PWB, 5V`;
-- **Right row** (downward from the antenna end, 17–32): `GND, 3V3, IO2, IO3, IO10, IO6, IO7, IO11, GND, 3V3, IO5, IO4, IO8, IO9, 5V, GND`;
-- **The LCD and the 5-way key live almost entirely on the right row** (the only exception is DOWN on the left row): SCLK=IO2 · MOSI=IO3 · RST=IO10 · DC=IO6 · CS=IO7; keys CENTER=IO4 · LEFT=IO5 · UP=IO8 · RIGHT=IO9 · DOWN=IO13;
+- **Left row** (downward from the USB end, official 32→17): `GND, 5V, IO9, IO8, IO4, IO5, 3V3, GND, IO11, IO7, IO6, IO10, IO3, IO2, 3V3, GND`;
+- **Right row** (downward from the USB end, official 16→01): `5V, PWB, GND, 3V3, RST, NC, IO13, U0TX, U0RX, GND, IO19, IO18, IO12, IO1, IO0, GND`;
+- **The LCD and the 5-way key live almost entirely on the left row** (the only exception is DOWN on the right row): SCLK=IO2 · MOSI=IO3 · RST=IO10 · DC=IO6 · CS=IO7; keys CENTER=IO4 · LEFT=IO5 · UP=IO8 · RIGHT=IO9 · DOWN=IO13;
 - **U0RX/U0TX = IO20/IO21** (UART0 broken out; the console goes over USB-Serial-JTAG and doesn't use them); **IO18/19 = USB D-/D+** — don't repurpose;
 - **IO14–17 are not broken out**: taken by the onboard external flash (the DIO wiring uses only those 4 pins, which is why IO12/13 are free);
 - **IO12 = onboard LED D4, IO13 = onboard LED D5** (IO13 doubles as the 5-way DOWN key, pressed = grounded; check the LED wiring before repurposing either);

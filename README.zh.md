@@ -21,6 +21,21 @@ luatos-esp32c3-air101lcd/
   `main/`、`sdkconfig.defaults`），`cd <project> && idf.py build` 即出固件；
 - 项目间不共享代码；需要共性时先拷贝，稳定后再考虑抽组件。
 
+### 固件基线规范（全家桶强制）
+
+两条基线对所有 MiBee 固件仓强制执行，主板仓内**每个项目**都必须满足：
+
+1. **看门狗：必须启用**。不允许裸奔主循环——任务要么订阅 TWDT 按周期喂狗，
+   要么（RP2040）启用硬件看门狗；
+2. **Web/API 固件升级（OTA）：硬件允许则必须提供**。本板有 WiFi、且 flash 里
+   已规划 OTA 双槽（960K×2），故每个项目都要带板端 web 刷机能力；有线烧录
+   （serialtap/esptool）是兜底恢复手段，不能替代 OTA。
+
+| 项目 | 看门狗 | Web/API OTA |
+|------|--------|-------------|
+| wifi-csi-sensing | ✅ 任务订阅 TWDT（`esp_task_wdt_add`/`reset`） | ✅ OTA 双槽 + 板端 web 刷机 |
+| blackbox | ✅ 任务订阅 TWDT | ✅ OTA 双槽 + 板端 web 刷机 |
+
 ---
 
 ## 板子概要
@@ -37,35 +52,39 @@ luatos-esp32c3-air101lcd/
 | 尺寸/引出 | 21 × 51 mm，板边邮票孔 2×16 = 32 引脚 |
 | 分区 | 自定义 OTA 双槽 960K×2（两个子项目均支持板端 web 刷机） |
 
-## 引脚位置图（天线朝上、USB-C 朝下，元件面视角；引脚号同合宙官方管脚图）
+## 引脚位置图（USB-C 朝上，正面/元件面视角；括号内为合宙官方天线朝上编号）
+
+> 全家桶标准视角为 **USB-C 朝上**（标准样板见 `esp32-s3-zero`）。合宙官方管脚图为天线朝上，
+> 本图按 180° 旋转重绘，官方引脚号逐脚标注在括号内，可与官方图直接对照。
 
 ```
-                  ~ 2.4G antenna ~
-       GND ◎│                 │◎ GND
-       IO0 ◎│   CORE-ESP32    │◎ 3V3
-       IO1 ◎│    ESP32-C3     │◎ IO2    ← LCD SCLK
-      IO12 ◎│    21 x 51 mm   │◎ IO3    ← LCD MOSI
-      IO18 ◎│                 │◎ IO10   ← LCD RST
-      IO19 ◎│                 │◎ IO6    ← LCD DC
-       GND ◎│ [RST]   [BOOT]  │◎ IO7    ← LCD CS
-      U0RX ◎│                 │◎ IO11   (VDD_SPI - 烧 eFuse
-      U0TX ◎│                 │◎ GND     才可作 GPIO)
-      IO13 ◎│                 │◎ 3V3
-        NC ◎│                 │◎ IO5    ← 五向键 LEFT
-       RST ◎│                 │◎ IO4    ← 五向键 CENTER
-       3V3 ◎│     ┌─────┐     │◎ IO8    ← 五向键 UP
-       GND ◎│     │USB-C│     │◎ IO9    ← 五向键 RIGHT = BOOT(IO9)
-       PWB ◎│     └─────┘     │◎ 5V
-        5V ◎│                 │◎ GND
-            └─────────────────┘
-         左排（01–16）     右排（17–32）
+                 ┌─ USB-C ─┐
+  GND(32) ◎     │          │     ◎ 5V(16)
+   5V(31) ◎     │          │     ◎ PWB(15)
+  IO9(30) ◎     │  CORE-   │     ◎ GND(14)   ← IO9 = 五向键 RIGHT = BOOT(IO9)
+  IO8(29) ◎     │  ESP32   │     ◎ 3V3(13)   ← IO8 = 五向键 UP
+  IO4(28) ◎     │    C3    │     ◎ RST(12)   ← IO4 = 五向键 CENTER
+  IO5(27) ◎     │  21×51mm │     ◎ NC(11)    ← IO5 = 五向键 LEFT
+  3V3(26) ◎     │          │     ◎ IO13(10)  ← IO13 = 五向键 DOWN + LED D5
+  GND(25) ◎     │          │     ◎ U0TX(09)  ← U0TX = IO21
+ IO11(24) ◎     │          │     ◎ U0RX(08)  ← U0RX = IO20；IO11 = VDD_SPI（烧 eFuse 才可作 GPIO）
+   IO7(23) ◎    │  [BOOT]  │     ◎ GND(07)   ← IO7 = LCD CS
+   IO6(22) ◎    │   [RST]  │     ◎ IO19(06)  ← IO6 = LCD DC；IO19 = USB D-
+  IO10(21) ◎    │          │     ◎ IO18(05)  ← IO10 = LCD RST；IO18 = USB D+
+   IO3(20) ◎    │          │     ◎ IO12(04)  ← IO3 = LCD MOSI；IO12 = LED D4
+   IO2(19) ◎    │          │     ◎ IO1(03)   ← IO2 = LCD SCLK
+  3V3(18) ◎     │          │     ◎ IO0(02)   ← 空闲（ADC0/ADC1，兼 UART1 复用）
+  GND(17) ◎     │          │     ◎ GND(01)
+                └──────────┘
+                ~ 2.4G 天线 ~
+      左排（官方 32→17）   右排（官方 16→01）
 ```
 
 要点：
 
-- **左排**自天线端向下（01–16）：`GND, IO0, IO1, IO12, IO18, IO19, GND, U0RX, U0TX, IO13, NC, RST, 3V3, GND, PWB, 5V`；
-- **右排**自天线端向下（17–32）：`GND, 3V3, IO2, IO3, IO10, IO6, IO7, IO11, GND, 3V3, IO5, IO4, IO8, IO9, 5V, GND`；
-- **LCD 与五向键几乎全在右排**（唯一例外是左排的 DOWN 键）：SCLK=IO2 · MOSI=IO3 · RST=IO10 · DC=IO6 · CS=IO7；键 CENTER=IO4 · LEFT=IO5 · UP=IO8 · RIGHT=IO9 · DOWN=IO13；
+- **左排**自 USB 端向下（官方 32→17）：`GND, 5V, IO9, IO8, IO4, IO5, 3V3, GND, IO11, IO7, IO6, IO10, IO3, IO2, 3V3, GND`；
+- **右排**自 USB 端向下（官方 16→01）：`5V, PWB, GND, 3V3, RST, NC, IO13, U0TX, U0RX, GND, IO19, IO18, IO12, IO1, IO0, GND`；
+- **LCD 与五向键几乎全在左排**（唯一例外是右排的 DOWN 键）：SCLK=IO2 · MOSI=IO3 · RST=IO10 · DC=IO6 · CS=IO7；键 CENTER=IO4 · LEFT=IO5 · UP=IO8 · RIGHT=IO9 · DOWN=IO13；
 - **U0RX/U0TX = IO20/IO21**（UART0 引出；控制台走 USB-Serial-JTAG，不占它）；**IO18/19 = USB D-/D+**，勿挪用；
 - **IO14–17 未引出**：板载外置 flash 占用（DIO 接法只用这 4 根，IO12/13 因此空闲）；
 - **IO12 = 板载 LED D4、IO13 = 板载 LED D5**（IO13 同时是五向键 DOWN，按下接地；这两个脚挪用前先看板载 LED 接法）；
