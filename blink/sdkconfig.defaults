@@ -1,0 +1,23 @@
+## blink — 合宙 ESP32-C3 CORE 裸核心板基线工程（不接 Air101 LCD）
+# 板级信息见 ../README.zh.md；同构拷贝自 esp32-s3-zero/blink（共性先拷贝）
+CONFIG_IDF_TARGET="esp32c3"
+
+# 控制台走原生 USB-Serial-JTAG（本板无 USB-UART 桥）
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# 本板 2MB flash：OTA 双槽 960K×2（基线能力=web 刷机；-Os 保证 app <960K）
+CONFIG_ESPTOOLPY_FLASHSIZE_2MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="2MB"
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+
+# 任务看门狗超时触发 panic 重启（主循环 1s 一拍喂狗）
+CONFIG_ESP_TASK_WDT_PANIC=y
+
+# C3 单核 RISC-V 满频
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_160=y
+CONFIG_FREERTOS_HZ=1000
+
+# 尺寸优化（-Os）：2MB flash 双 OTA 槽的硬约束
+CONFIG_COMPILER_OPTIMIZATION_SIZE=y
