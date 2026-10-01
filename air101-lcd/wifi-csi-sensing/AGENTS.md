@@ -1,7 +1,7 @@
 # AGENTS.md — wifi-csi-sensing（工程级约定）
 
 项目级工程笔记：改代码前先读。板级硬件事实（芯片/引脚/按键/供电）见根
-[README](../README.zh.md)，用户视角功能见
+[README](../../README.zh.md)，用户视角功能见
 [用户手册](docs/user-guide.zh.md)。
 
 ## 硬约束（读后再动代码）

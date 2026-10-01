@@ -18,11 +18,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [wifi-csi-sensing, blackbox]
+        include:
+          - project: air101-lcd/wifi-csi-sensing
+            name: wifi-csi-sensing
+          - project: blackbox
+            name: blackbox
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Firmware (${{ matrix.project }})
+      - name: Build Firmware (${{ matrix.name }})
         working-directory: ${{ matrix.project }}
         run: |
           . ${IDF_PATH}/export.sh
@@ -33,15 +37,15 @@ jobs:
         working-directory: ${{ matrix.project }}
         run: |
           mkdir -p ../firmware
-          cp build/bootloader/bootloader.bin ../firmware/${{ matrix.project }}_bootloader.bin
-          cp build/partition_table/partition-table.bin ../firmware/${{ matrix.project }}_partition_table.bin
+          cp build/bootloader/bootloader.bin ../firmware/${{ matrix.name }}_bootloader.bin
+          cp build/partition_table/partition-table.bin ../firmware/${{ matrix.name }}_partition_table.bin
           # 排除 bootloader/partition/ota_data_initial（OTA 双槽布局新生成物）
           APP_BIN=$(ls build/*.bin | grep -v -e bootloader -e partition -e ota_data | head -1)
-          cp "$APP_BIN" ../firmware/${{ matrix.project }}_firmware.bin
+          cp "$APP_BIN" ../firmware/${{ matrix.name }}_firmware.bin
 
       - uses: actions/upload-artifact@v4
         with:
-          name: firmware-${{ matrix.project }}
+          name: firmware-${{ matrix.name }}
           path: firmware/
           retention-days: 30
 
