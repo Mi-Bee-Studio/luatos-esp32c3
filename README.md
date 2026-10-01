@@ -4,6 +4,8 @@
 
 [![Build Firmware](https://github.com/Mi-Bee-Studio/luatos-esp32c3/actions/workflows/build.yml/badge.svg)](https://github.com/Mi-Bee-Studio/luatos-esp32c3/actions/workflows/build.yml)
 
+<img src="docs/images/luatos-esp32c3.jpg" alt="LuatOS CORE-ESP32-C3" width="420">
+
 A board under the board-centric repo convention: the **LuatOS ESP32-C3 CORE board**.
 The LuatOS Air101 LCD (ST7735S 0.96″) is an **external display expansion**, not part
 of the core board — projects using it live under `air101-lcd/`, bare-core-board

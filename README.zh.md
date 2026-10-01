@@ -4,6 +4,8 @@
 
 [![Build Firmware](https://github.com/Mi-Bee-Studio/luatos-esp32c3/actions/workflows/build.yml/badge.svg)](https://github.com/Mi-Bee-Studio/luatos-esp32c3/actions/workflows/build.yml)
 
+<img src="docs/images/luatos-esp32c3.jpg" alt="LuatOS CORE-ESP32-C3" width="420">
+
 主板目录规范的一块板：**合宙 ESP32-C3 CORE 核心板**；合宙 Air101 LCD（ST7735S 0.96″）
 是**外接显示扩展板**，不是核心板的一部分——接它的项目放 `air101-lcd/` 子目录，
 裸核心板项目放顶层。**本仓库按"主板为根"规范组织**：
